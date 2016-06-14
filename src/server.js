@@ -23,7 +23,7 @@ const getRelatedArtists = (artist, res) => {
     getFromApi(`artists/${artist.id}/related-artists`)
 
   relatedReq.on('end', relatedArtists => {
-    artist.related = relatedArtists
+    artist.related = relatedArtists.artists
     res.json(artist)
   })
   relatedReq.on('error', () => {
