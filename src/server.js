@@ -2,6 +2,8 @@ import unirest from 'unirest'
 import express from 'express'
 import events from 'events'
 
+const app = express()
+
 const getFromApi = (endpoint, args) => {
   const emitter = new events.EventEmitter()
   unirest.get(`https://api.spotify.com/v1/${endpoint}`)
@@ -16,7 +18,19 @@ const getFromApi = (endpoint, args) => {
   return emitter
 }
 
-const app = express()
+const getRelatedArtists = (artist, res) => {
+  const relatedReq =
+    getFromApi(`artists/${artist.id}/related-artists`)
+
+  relatedReq.on('end', relatedArtists => {
+    artist.related = relatedArtists
+    res.json(artist)
+  })
+  relatedReq.on('error', () => {
+    res.sendStatus(404)
+  })
+}
+
 app.use(express.static('public'))
 
 app.get('/search/:name', (req, res) => {
@@ -28,9 +42,8 @@ app.get('/search/:name', (req, res) => {
 
   searchReq.on('end', item => {
     const artist = item.artists.items[0]
-    res.json(artist)
+    getRelatedArtists(artist, res)
   })
-
   searchReq.on('error', code => {
     res.sendStatus(code)
   })
