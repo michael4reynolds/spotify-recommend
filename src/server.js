@@ -1,4 +1,4 @@
-const unirest = require('unirest')
+const fetch = require('node-fetch')
 const express = require('express')
 const path = require('path')
 
@@ -6,23 +6,14 @@ const app = express()
 
 // API Functions
 
-const getFromApi = (endpoint, args) => {
-  return new Promise((resolve, reject) => {
-    unirest.get(`https://api.spotify.com/v1/${endpoint}`)
-      .qs(args)
-      .end(response => {
-        if (response.ok) {
-          resolve(response.body)
-        } else {
-          reject('error', response.code)
-        }
-      })
-  })
+const getFromApi = (endpoint) => {
+  return fetch(`https://api.spotify.com/v1/${endpoint}`)
+    .then(response => response.json())
 }
 
 const getArtist = (name) => {
-  return getFromApi('search', {q: name, limit: 1, type: 'artist'})
-    .then(response => response.artists.items[0], handleError)
+  return getFromApi('search?q=name&limit=1&type=artist')
+    .then(response => response.artists.items[0])
 }
 
 const getRelatedArtists = (artist) => {
@@ -30,19 +21,19 @@ const getRelatedArtists = (artist) => {
     .then(response => {
       artist.related = response.artists
       return artist
-    }, handleError)
+    })
 }
 
 const getTopTracks = (mainArtist) => {
   var promises = mainArtist.related
     .map(function (artist) {
-      return getFromApi(`artists/${artist.id}/top-tracks`, {country: 'us'})
+      return getFromApi(`artists/${artist.id}/top-tracks?country=us`)
         .then(topTracks => {
           artist.tracks = topTracks.tracks
           return artist
-        }, handleError)
+        })
     })
-  return Promise.all(promises).then(() => mainArtist, handleError)
+  return Promise.all(promises).then(() => mainArtist)
 }
 
 const sendResults = (res) => {
